@@ -1,0 +1,7 @@
+# Bundle patch for dsh-plugin-pkt.
+# Inserts the tool plugin into a DSH profile tree.
+#
+# Keep the entry id stable; if you rename the package, change it here too.
+- insert:
+    - id: pkt-reader
+      name: 'dsh-plugin-pkt'

@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: [18, 20, 22]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # The package has no runtime dependencies; the host packages are stubbed
+      # by the test harness, so no install step is required.
+      - name: Self test (crypto core)
+        run: node test/selftest.mjs
+
+      - name: Smoke test (tool registration)
+        run: node test/plugin.test.mjs

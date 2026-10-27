@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build output
+dist/
+*.tsbuildinfo
+
+# test artifacts
+*.log
+tmp/
+scratch/
+
+# Packet Tracer sample files (never commit student lab files)
+*.pkt
+*.pka
+*.pta
+*.pkz
+!test/fixtures/*.pkt
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

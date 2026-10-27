@@ -1,0 +1,55 @@
+{
+  "name": "dsh-plugin-pkt",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness plugin for Cisco Packet Tracer: read, diagnose, repair and build .pkt/.pka topologies, and launch Packet Tracer Instructor.",
+  "license": "MIT",
+  "author": "heqinjian",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "bin",
+    "cordis.patch.yml",
+    "install.ps1",
+    "README.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "pkt": "bin/pkt.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node test/selftest.mjs && node test/plugin.test.mjs",
+    "selftest": "node test/selftest.mjs",
+    "smoke": "node test/plugin.test.mjs"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "packet-tracer",
+    "pkt",
+    "pka",
+    "cisco",
+    "networking",
+    "topology"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/heqinjian/dsh-plugin-pkt.git"
+  },
+  "bugs": {
+    "url": "https://github.com/heqinjian/dsh-plugin-pkt/issues"
+  },
+  "homepage": "https://github.com/heqinjian/dsh-plugin-pkt#readme",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-tools": "^0.2.0-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.2"
+  }
+}
