@@ -211,6 +211,39 @@ DSH loader 在**运行期新增的插件条目一律 `fiberPhase: failed`**，�
 2. 后续更新代码也要重启才生效；
 3. 如果条目卡在 `failed`，换个 `id` 重新插入即可（同名不会重试）。
 
+### 安装常见问题
+
+**「未找到插件」**
+
+包确实不在 profile 里。检查：
+
+```powershell
+Test-Path "$env:USERPROFILE\.dsh\profiles\desktop\node_modules\dsh-plugin-pkt"
+```
+
+返回 `False` 说明没装上——删除插件后 UI 可能还留着旧行，直接重装即可。
+
+**装的时候报 `tool "pkt_read" is already registered`**
+
+说明还有另一份拷贝在用同一个工具名注册。常见于手工装过一份、又用插件管理器装了一份。
+查一下有没有残留：
+
+```powershell
+Get-ChildItem "$env:USERPROFILE\.dsh\profiles\desktop\node_modules" -Filter "*pkt*" -Directory
+```
+
+把多余的删掉（连同 `cordis.patch.yml` 里对应的 `- insert:` 条目），再重装。
+
+**装完状态一直是 `failed`**
+
+同一 `id` 的条目不会重试。删掉插件、重启 DSH、再装一次，就会拿到全新的 entry。
+
+推荐的干净流程：
+
+```
+删除插件 → 重启 DSH → 安装 → 重启 DSH（若未自动激活）
+```
+
 ---
 
 ## 7. 目录结构
