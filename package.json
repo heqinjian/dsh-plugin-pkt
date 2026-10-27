@@ -47,6 +47,10 @@
     "url": "https://github.com/heqinjian/dsh-plugin-pkt/issues"
   },
   "homepage": "https://github.com/heqinjian/dsh-plugin-pkt#readme",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
