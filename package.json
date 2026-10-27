@@ -47,9 +47,9 @@
     "url": "https://github.com/heqinjian/dsh-plugin-pkt/issues"
   },
   "homepage": "https://github.com/heqinjian/dsh-plugin-pkt#readme",
-  "peerDependencies": {
-    "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/dsh-tools": "^0.2.0-rc.2",
-    "@deepseek-ai/schemastery": "^3.18.2"
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
   }
 }
