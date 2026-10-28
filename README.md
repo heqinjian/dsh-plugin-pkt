@@ -143,6 +143,24 @@ Packet Tracer 6.x 及以后版本的 `.pkt/.pka/.pta` 是四段式封装：
 **第 2 段是 EAX 不是 CBC**。CTR 是流模式，密文长度不必是 16 的倍数；EAX 的认证标签
 同时校验完整性。
 
+### ⚠️ 前 4 字节是「字节数」，不是「字符数」
+
+写回时这个长度前缀必须是 **UTF-8 字节数**。若误用 JS 字符串的 `.length`（UTF-16 码元
+数），只要文档里有中文（画布标注、设备描述等），前缀就会偏小 `2 × 汉字数` 字节，而
+**Packet Tracer 只读前缀声明的字节数，会静默截断文档尾部**。
+
+这个故障极难发现，因为损坏只发生在 PT 加载时：
+
+- XML 本身完全合法，`decryptPkt` 能正常解压（`inflateSync` 不看前缀）；
+- `pkt_read` 读回来一切正常，看不出异常；
+- PT 里表现为「最后一台设备的部分元素丢失」——例如接口 IP 还在（块的前部），但
+  `DNS_SERVER`、`HTTP_SERVER`（块的后部）被截掉，于是出现「IP 能 ping 通、服务却是
+  Off」这种自相矛盾的现象。
+
+因此 `encryptPkt()` 接受字符串或 Buffer 都会归一化为 Buffer 后再写前缀；
+`decryptPkt()` 额外返回 `sizeMismatch` 标志，`pkt_fix`/`pkt_build`/`pkt_new` 写完后
+会断言该标志为 `false`，把这类问题挡在写入口。
+
 Twofish 用设计者测试向量校验：全零密钥 + 全零明文 → `9F589F5CF6122C32B6BFEC2F2AE8C35A`，
 40 个轮密钥与 `ecb_ival.txt` 一致。
 

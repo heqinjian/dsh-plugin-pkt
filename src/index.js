@@ -333,6 +333,9 @@ const FIX_DEF = {
 
     // verify by decoding what we just wrote
     const check = decryptPkt(await readFile(outPath))
+    if (check.sizeMismatch) {
+      throw new Error(`${outPath}: 长度前缀与实际内容不一致 (declared=${check.declaredSize}, actual=${check.xml.length})，Packet Tracer 会截断文档`)
+    }
     const after = detectIssues(buildModel(parseXml(check.xml.toString('utf8'))))
 
     out.push('')
@@ -465,7 +468,11 @@ const BUILD_DEF = {
       : join(dirname(abs), `${basename(abs, extname(abs))}-built.pkt`)
     await writeFile(outPath, encryptPkt(Buffer.from(text, 'utf8')))
 
-    const check = buildModel(parseXml(decryptPkt(await readFile(outPath)).xml.toString('utf8')))
+    const built = decryptPkt(await readFile(outPath))
+    if (built.sizeMismatch) {
+      throw new Error(`${outPath}: 长度前缀与实际内容不一致 (declared=${built.declaredSize}, actual=${built.xml.length})，Packet Tracer 会截断文档`)
+    }
+    const check = buildModel(parseXml(built.xml.toString('utf8')))
     log.push('')
     log.push(`已写入 ${outPath}`)
     log.push(`结果: ${check.devices.length} 台设备 / ${check.links.length} 条链路`)
@@ -551,7 +558,11 @@ const NEW_DEF = {
     const outPath = resolve(args.out)
     await writeFile(outPath, encryptPkt(Buffer.from(newXml, 'utf8')))
 
-    const check = buildModel(parseXml(decryptPkt(await readFile(outPath)).xml.toString('utf8')))
+    const built = decryptPkt(await readFile(outPath))
+    if (built.sizeMismatch) {
+      throw new Error(`${outPath}: 长度前缀与实际内容不一致 (declared=${built.declaredSize}, actual=${built.xml.length})，Packet Tracer 会截断文档`)
+    }
+    const check = buildModel(parseXml(built.xml.toString('utf8')))
     const lines = [
       `模板: ${tplPath}`,
       `保留: ${args.keep.join(', ')}`,

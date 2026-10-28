@@ -269,13 +269,24 @@ export function decryptPkt (data) {
       throw new Error(`zlib decompression failed: ${e.message}`)
     }
   }
-  return { xml: plain, declaredSize }
+  // Packet Tracer only reads `declaredSize` bytes of the payload, so a prefix
+  // that disagrees with the real byte length silently truncates the document
+  // (typically the last device's trailing elements). inflateSync() ignores the
+  // prefix, so without this flag the corruption is invisible from the read side.
+  const sizeMismatch = declaredSize !== plain.length
+  return { xml: plain, declaredSize, sizeMismatch }
 }
 
 export function encryptPkt (xml) {
+  // The 4-byte prefix is a BYTE count of the UTF-8 payload. For a JS string
+  // `.length` is the UTF-16 code-unit count instead, so any non-ASCII character
+  // (Chinese canvas notes, accented device names, ...) makes the prefix short
+  // and Packet Tracer silently truncates the tail of the document when it loads
+  // the file. Normalise to a Buffer so both call styles are safe.
+  const payload = Buffer.isBuffer(xml) ? xml : Buffer.from(String(xml), 'utf8')
   const lenPrefix = Buffer.alloc(4)
-  lenPrefix.writeUInt32BE(xml.length, 0)
-  const stage3 = Buffer.concat([lenPrefix, deflateSync(xml)])
+  lenPrefix.writeUInt32BE(payload.length, 0)
+  const stage3 = Buffer.concat([lenPrefix, deflateSync(payload)])
   const m = stage3.length
   const stage2 = Buffer.alloc(m)
   for (let i = 0; i < m; i++) stage2[i] = stage3[i] ^ ((m - i) & 0xff)

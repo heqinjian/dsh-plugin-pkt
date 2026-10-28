@@ -1,6 +1,6 @@
 {
   "name": "dsh-plugin-pkt",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DeepSeek Harness plugin for Cisco Packet Tracer: read, diagnose, repair and build .pkt/.pka topologies, and launch Packet Tracer Instructor.",
   "license": "MIT",
   "author": "heqinjian",

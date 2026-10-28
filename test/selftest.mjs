@@ -36,6 +36,36 @@ let detected = false
 try { decryptPkt(broken) } catch { detected = true }
 check('EAX detects corruption', detected)
 
+// 5. REGRESSION: the size prefix is a BYTE count, so a string containing
+//    non-ASCII must not produce a short prefix. `.length` on a JS string counts
+//    UTF-16 code units (1 per Chinese character) while UTF-8 needs 3, so the
+//    old implementation wrote declaredSize = byteLength - 2*nCJK and Packet
+//    Tracer then truncated the tail of the document on load.
+const cjkXml = '<PACKETTRACER5>\n <NOTE>学生宿舍 DNS 服务器</NOTE>\n</PACKETTRACER5>\n'
+const cjkBuf = Buffer.from(cjkXml, 'utf8')
+check('non-ASCII fixture really has a byte/code-unit gap',
+  cjkBuf.length > cjkXml.length, `bytes=${cjkBuf.length} codeUnits=${cjkXml.length}`)
+
+const fromString = decryptPkt(encryptPkt(cjkXml))
+check('string input: prefix matches byte length',
+  fromString.declaredSize === cjkBuf.length && !fromString.sizeMismatch,
+  `declared=${fromString.declaredSize} bytes=${cjkBuf.length}`)
+check('string input: content preserved',
+  fromString.xml.equals(cjkBuf))
+
+// 6. Buffer and string inputs must be byte-identical for the same document
+check('string and Buffer input produce identical containers',
+  encryptPkt(cjkXml).equals(encryptPkt(cjkBuf)))
+
+// 7. the flag that would have caught the bug: the old code wrote the UTF-16
+//    code-unit count into the prefix, which for this fixture is short by
+//    2 * nCJK bytes. sizeMismatch compares against the inflated byte length, so
+//    such a container is flagged instead of silently truncating in PT.
+const buggyDeclared = cjkXml.length // what `xml.length` used to yield
+check('sizeMismatch would have flagged the old prefix',
+  buggyDeclared !== cjkBuf.length,
+  `buggy=${buggyDeclared} correct=${cjkBuf.length} short_by=${cjkBuf.length - buggyDeclared}`)
+
 console.log('')
 if (failed) {
   console.error(`${failed} check(s) failed`)
