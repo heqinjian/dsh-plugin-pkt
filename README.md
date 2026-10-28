@@ -1,5 +1,7 @@
 # dsh-plugin-pkt — Cisco Packet Tracer 读写与自动化插件
 
+[English](README.en.md) | **中文**
+
 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 用的 Packet Tracer 插件：
 读取、诊断、**修复** `.pkt` / `.pka` / `.pta` 文件，**从模板搭建新拓扑**，并直接启动本机
 Packet Tracer (Instructor) 打开文件。

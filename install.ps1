@@ -31,7 +31,7 @@ Write-Host "target : $dest"
 # 1) copy the package
 if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
-foreach ($item in @("src", "bin", "package.json", "cordis.patch.yml", "README.md", "LICENSE")) {
+foreach ($item in @("src", "bin", "package.json", "cordis.patch.yml", "README.md", "README.en.md", "LICENSE")) {
     $src = Join-Path $here $item
     if (Test-Path $src) { Copy-Item $src $dest -Recurse -Force }
 }
