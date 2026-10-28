@@ -52,21 +52,6 @@ decoded in-process (Twofish-EAX + zlib).
 | **Missing route statement** | `router x` with no `network` | rewritten together with the item above |
 | **Mask mismatch** | Endpoint mask differs from the router interface on the same subnet | reported only, not auto-fixed |
 
-Validation record (`故障排查及修复二.pkt`, unmodified, with 4 faults reported by hand):
-
-```
-修复前: 5 处
-  · 线缆 R1 Gi0/1 ↔ R2 Gi0/0: 改为交叉线
-  · PC1 默认网关: 172.16.1.254 → 172.16.1.1
-  · R2 Gi0/0: 172.16.3.2 → 172.16.3.1（消除地址冲突）
-  · R1: 路由改为 ospf，宣告 172.16.1.0 / 172.16.3.0
-修复后: 0 处
-```
-
-Program output is reproduced verbatim — the tools emit Chinese messages.
-
-The generated file was opened in Packet Tracer 6.2 Instructor with no errors.
-
 ---
 
 ## 3. Building topologies automatically
@@ -94,23 +79,6 @@ links, canvas notes), then rebuild the links you ask for. Good for "I want a cle
 }
 ```
 
-Measured (6-device template → 2 devices / 1 link):
-
-```
-== 设备 ==
-  [0] Switch0 (Switch)  —  Switch · SN CAT101008Z4
-  [1] R1  —  Router · SN FTX1524C5P2
-        GigabitEthernet0/0: 172.16.1.1/255.255.255.0
-
-== 链路 ==
-  R1 GigabitEthernet0/0  <-->  Switch0 FastEthernet0/1   [eStraightThrough]
-```
-
-Confirmed by screenshot after opening in PT 6.2 Instructor: only R1 (2911) and Switch0
-(2960-24TT) on the canvas, both ends of the link green. **Note that STP takes about 15
-seconds to converge after PT opens the file; the switch end showing amber until then is
-normal.**
-
 ### 3.2 `pkt_build` — append to an existing topology
 
 Clone existing devices as new nodes, then wire them up.
@@ -129,8 +97,6 @@ Clone existing devices as new nodes, then wire them up.
   ]
 }
 ```
-
-Measured: 6 devices / 5 links → 7 devices / 6 links; PT opens it normally.
 
 **Shared limitation**: both methods can only use device types already present in the
 template. To add a 2911 router, the source file must already contain a 2911 to clone.
@@ -151,33 +117,21 @@ template. To add a 2911 router, the source file must already contain a 2911 to c
 **Stage 2 is EAX, not CBC.** CTR is a stream mode, so the ciphertext length need not be a
 multiple of 16; EAX's authentication tag verifies integrity at the same time.
 
-### ⚠️ The first 4 bytes are a BYTE count, not a character count
-
-When writing back, that length prefix must be the **UTF-8 byte count**. If you mistakenly
-use a JS string's `.length` (UTF-16 code units), then any document containing non-ASCII text
-(Chinese canvas notes, device descriptions, ...) gets a prefix that is short by
-`2 × (number of non-ASCII characters)` bytes — and **Packet Tracer reads only the number of
-bytes the prefix declares, so it silently truncates the tail of the document.**
-
-This failure is hard to spot, because the damage only materialises when PT loads the file:
-
-- the XML itself is perfectly valid and `decryptPkt` decompresses it fine (`inflateSync`
-  ignores the prefix);
-- `pkt_read` reports everything as healthy;
-- in PT it surfaces as "some elements of the last device are missing" — the interface IP
-  (early in the block) survives while `DNS_SERVER` and `HTTP_SERVER` (later in the block)
-  are cut off, producing the self-contradictory "the IP pings but the service is Off".
-
-Therefore `encryptPkt()` normalises either a string or a Buffer to a Buffer before writing
-the prefix, and `decryptPkt()` additionally returns a `sizeMismatch` flag; `pkt_fix`,
-`pkt_build` and `pkt_new` assert that flag is `false` after writing, so this class of
-problem is blocked at the write path.
-
-Twofish is verified against the designers' test vector: all-zero key + all-zero plaintext →
-`9F589F5CF6122C32B6BFEC2F2AE8C35A`, with all 40 subkeys matching `ecb_ival.txt`.
-
 Writes are **text-level surgical replacements only** — the XML is never re-serialised, so
 every structural detail PT relies on is preserved exactly as it was.
+
+### ⚠️ The first 4 bytes are a BYTE count, not a character count
+
+The length prefix must be the **UTF-8 byte count**. If you use a JS string's `.length`
+(UTF-16 code units) instead, then any document containing non-ASCII text (Chinese canvas
+notes, device descriptions, ...) gets a prefix that is short by
+`2 × (number of non-ASCII characters)` bytes — and **PT reads only the number of bytes the
+prefix declares, so it silently truncates the tail of the document**, which shows up as some
+elements of the last device going missing (the interface IP survives, `DNS_SERVER` does not).
+
+Therefore `encryptPkt()` normalises either a string or a Buffer to a Buffer before writing
+the prefix, and `decryptPkt()` additionally returns a `sizeMismatch` flag that `pkt_fix`,
+`pkt_build` and `pkt_new` assert is `false` after writing.
 
 ---
 
@@ -407,7 +361,7 @@ node test/plugin.test.mjs your-file.pkt   # run pkt_read once more
 - Routing protocol unification is heuristic (it picks the more fully configured side);
   complex cases need human judgement.
 - Cloned devices keep the template's MAC addresses, so duplicate MACs can appear within one
-  file. Measured on PT 6.2 it opens fine, but strict setups should change them by hand.
+  file; strict setups should change them by hand.
 - STP takes about 15 seconds to converge after PT opens a file; the switch end showing amber
   until then is normal.
 
