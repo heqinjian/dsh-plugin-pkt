@@ -218,7 +218,78 @@ plugin_manager install_bundle target="github:heqinjian/dsh-plugin-pkt"
 
 ### 6.3 只想要命令行
 
-不需要装插件，直接 clone 后运行 `node bin/pkt.mjs`（见上一节）。要求 Node.js ≥ 18。
+不需要装插件，直接 clone 后运行 `node bin/pkt.mjs`（见第 5 节）。要求 Node.js ≥ 18。
+
+### 6.4 更新已安装的插件
+
+插件是纯 JavaScript、**无第三方依赖、无构建步骤**，所以"更新"本质上只有两件事：
+**替换 `<profile>\node_modules\dsh-plugin-pkt` 里的文件** + **重启 DSH**。
+
+先确认当前装的是哪个版本：
+
+```powershell
+(Get-Content "$env:USERPROFILE\.dsh\profiles\desktop\node_modules\dsh-plugin-pkt\package.json" |
+  ConvertFrom-Json).version
+```
+
+#### A. 用 git clone + install.ps1 装的（推荐）
+
+```bash
+cd dsh-plugin-pkt
+git pull
+powershell -ExecutionPolicy Bypass -File install.ps1
+```
+
+`install.ps1` 对更新是安全的，可以反复执行：
+
+- 会先 `Remove-Item -Recurse -Force` 删掉目标目录再整份复制，**不会残留旧文件**；
+- `cordis.patch.yml` 里检测到 `id: pkt-reader` 就跳过，**不会重复插入 loader 条目**
+  （重复插入会导致 `tool "pkt_read" is already registered`）。
+
+#### B. 用 plugin_manager 装的
+
+```bash
+plugin_manager remove_bundle target="dsh-plugin-pkt"
+plugin_manager install_bundle target="github:heqinjian/dsh-plugin-pkt"
+```
+
+⚠️ 如果 `remove_bundle` 后立刻 `install_bundle`，新的 loader 条目可能卡在 `failed`
+（见下文「装完必须重启 DSH」）。稳妥顺序是：**移除 → 重启 DSH → 安装 → 重启 DSH**。
+
+#### C. 只想升级命令行
+
+```bash
+git pull
+```
+
+`bin/pkt.mjs` 不依赖 profile，clone 目录更新完即可用。
+
+#### 更新后验证
+
+1. **必须重启 DSH**——loader 不会热加载插件，不重启就还是旧代码在跑；
+2. 重启后确认 `pkt_read` / `pkt_fix` / `pkt_new` / `pkt_build` / `pkt_open` 五个工具都在；
+3. 跑自检：
+
+```bash
+node test/selftest.mjs        # 加密内核 + 容器往返
+node test/plugin.test.mjs     # 工具注册
+```
+
+**自检要在 git clone 目录里跑，不要在 profile 目录里跑**——`install.ps1` 只复制
+`src`/`bin`/`package.json`/`cordis.patch.yml`/`README.md`/`LICENSE`，**不含 `test/`
+和 `examples/`**，在 profile 里执行会报找不到文件。
+
+#### 更新后工具行为没变？
+
+按这个顺序查：
+
+1. **没重启 DSH** —— 最常见，占九成；
+2. **改了不止一处拷贝** —— 手工装过一份、插件管理器又装了一份。检查：
+   ```powershell
+   Get-ChildItem "$env:USERPROFILE\.dsh\profiles\desktop\node_modules" -Filter "*pkt*" -Directory
+   ```
+   只应存在一个 `dsh-plugin-pkt`；
+3. **版本号没变** —— 用上面的 `package.json` 命令确认，别只靠 `git log`。
 
 ### ⚠️ 装完必须重启 DSH
 
